@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>仕事記録</title>
+<style>
+  :root{
+    --bg:#EBEEF1;
+    --card:#FFFFFF;
+    --ink:#1E2430;
+    --ink-soft:#5B6472;
+    --line:#DCE1E6;
+    --route:#1B6B93;
+    --route-dark:#154F6F;
+    --active:#E0983C;
+    --active-soft:#FCEEDC;
+    --danger:#B4432F;
+    --done:#2F8A5B;
+    --done-soft:#E4F4EA;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:0 0 48px 0;
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:0 16px;}
+
+  header{
+    padding:20px 12px 8px 16px;
+    padding-top:calc(20px + env(safe-area-inset-top));
+    max-width:480px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  header h1{font-size:19px;font-weight:700;margin:0;letter-spacing:.02em;}
+  header .today{font-size:13px;color:var(--ink-soft);flex:1;text-align:right;margin-right:4px;}
+  .menu-btn{
+    background:none;border:none;font-size:24px;line-height:1;color:var(--ink);
+    padding:8px 10px;flex:none;
+  }
+
+  .status-card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:22px 20px;
+    margin-top:10px;
+    box-shadow:0 1px 2px rgba(30,36,48,.06);
+    border:1px solid var(--line);
+  }
+  .status-card.is-active{
+    background:linear-gradient(180deg,#FFFDF9,#FFF9F0);
+    border-color:#F0D2A6;
+  }
+  .status-label{
+    font-size:13px;color:var(--ink-soft);margin:0 0 4px 0;
+  }
+  .status-main{
+    display:flex;align-items:center;gap:10px;margin-bottom:2px;
+  }
+  .status-dot{
+    width:10px;height:10px;border-radius:50%;background:var(--ink-soft);flex:none;
+  }
+  .status-card.is-active .status-dot{
+    background:var(--active);
+    box-shadow:0 0 0 4px var(--active-soft);
+  }
+  .status-title{font-size:20px;font-weight:700;}
+  .timer{
+    font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;
+    font-size:34px;font-weight:600;letter-spacing:.02em;
+    margin:10px 0 4px 0;color:var(--active);
+  }
+  .status-sub{font-size:13px;color:var(--ink-soft);margin-top:2px;line-height:1.6;}
+  .status-stop{margin-top:16px;}
+
+  button{font-family:inherit;}
+  .btn{
+    width:100%;
+    border:none;border-radius:14px;
+    padding:18px 16px;
+    font-size:18px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--route);color:#fff;}
+  .btn-stop{background:var(--active);color:#fff;}
+  .btn-ghost{
+    background:transparent;color:var(--route);
+    font-size:14px;font-weight:600;padding:12px 8px;
+  }
+  .btn-secondary{
+    background:#fff;color:var(--route);
+    border:1.5px solid var(--route);
+    font-size:15px;padding:13px 16px;
+  }
+  .btn-done{background:var(--done);color:#fff;}
+
+  .actions{margin-top:14px;}
+
+  .start-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;
+    margin-top:14px;
+  }
+  .start-grid .btn{
+    font-size:15px;padding:15px 8px;border-radius:14px;
+    flex-direction:column;gap:6px;
+  }
+  .start-grid .btn .gicon{font-size:21px;}
+  .start-grid .span2{grid-column:1 / span 2;}
+  .start-intake{background:#46596B;color:#fff;}
+  .start-review{background:#3E7A6D;color:#fff;}
+  .start-appointment{background:#6E5AA0;color:#fff;}
+  .start-travel{background:var(--route);color:#fff;}
+  .start-meeting{background:#2C6E63;color:#fff;}
+  .start-insurer{background:#5B5FC7;color:#fff;}
+  .start-report{background:#8A5A2B;color:#fff;}
+
+  .case-record{cursor:pointer;}
+  .case-record .case-number{
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;
+    font-variant-numeric:tabular-nums;
+  }
+  .badge-done{
+    display:inline-block;background:var(--done-soft);color:var(--done);
+    font-size:11px;font-weight:700;border-radius:999px;
+    padding:2px 8px;margin-left:8px;vertical-align:middle;
+  }
+  .badge-pending{
+    display:inline-block;background:#EEF0F2;color:var(--ink-soft);
+    font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;
+  }
+
+  .summary{
+    display:flex;gap:10px;margin-top:16px;
+  }
+  .summary .cell{
+    flex:1;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:14px 14px;
+  }
+  .summary .cell .label{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .summary .cell .value{
+    font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;
+    font-size:21px;font-weight:700;
+  }
+
+  .section-title{
+    font-size:14px;font-weight:700;color:var(--ink-soft);
+    margin:26px 2px 8px 2px;
+  }
+
+  .day-group{margin-bottom:14px;}
+  .day-heading{font-size:13px;font-weight:700;color:var(--ink-soft);margin:0 2px 6px 2px;}
+  .record{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;margin-bottom:8px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .record .icon{font-size:20px;flex:none;}
+  .record .body{flex:1;min-width:0;}
+  .record .row1{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .record .row2{font-size:12.5px;color:var(--ink-soft);margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .record .del{
+    flex:none;background:none;border:none;color:#B7BEC7;
+    font-size:18px;padding:6px;cursor:pointer;
+  }
+  .empty{
+    text-align:center;color:var(--ink-soft);font-size:14px;
+    padding:28px 10px;
+  }
+
+  /* modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(20,24,32,.42);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:50;
+  }
+  .overlay.hidden{display:none;}
+  .sheet{
+    width:100%;max-width:480px;background:var(--card);
+    border-radius:20px 20px 0 0;
+    padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+    max-height:88vh;overflow-y:auto;
+  }
+  .sheet h2{font-size:17px;margin:0 0 14px 0;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px;}
+  .field input{
+    width:100%;font-size:18px;padding:12px 12px;
+    border:1px solid var(--line);border-radius:10px;
+    font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;
+  }
+  .field select{
+    width:100%;font-size:16px;padding:12px 12px;
+    border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;background:#fff;color:var(--ink);
+  }
+  .field textarea{
+    width:100%;font-size:15px;padding:12px 12px;
+    border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;resize:vertical;min-height:56px;
+  }
+  .field.text input{font-family:inherit;font-variant-numeric:normal;}
+  .field-hint{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+  .sheet-actions{display:flex;gap:10px;margin-top:6px;}
+  .sheet-actions .btn{padding:14px;font-size:16px;}
+  .btn-cancel{background:#EEF0F2;color:var(--ink);}
+  .err{color:var(--danger);font-size:13px;margin:-6px 0 12px 0;display:none;}
+  .err.show{display:block;}
+  .hidden-field{display:none;}
+
+  .detail-info{margin-bottom:16px;}
+  .detail-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .detail-row .k{color:var(--ink-soft);flex:none;}
+  .detail-row .v{text-align:right;flex:1;min-width:0;word-break:break-word;}
+  .detail-report{margin:14px 0;padding:14px;border-radius:12px;background:#F5F6F4;}
+  .detail-report.reported{background:var(--done-soft);}
+  .detail-report .rlabel{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .detail-report .rvalue{font-size:15px;font-weight:700;color:var(--done);}
+
+  .season-toggle{display:flex;gap:8px;margin-top:10px;}
+  .season-btn{
+    flex:1;padding:10px;font-size:13px;font-weight:700;
+    border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
+  }
+  .season-btn.season-active{background:var(--route);border-color:var(--route);color:#fff;}
+  .exp-amount-display{font-size:18px;font-weight:700;font-family:"SF Mono",ui-monospace,Menlo,monospace;}
+
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;
+    font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:60;
+  }
+  .toast.show{opacity:1;}
+
+  .page-overlay{
+    position:fixed;inset:0;background:var(--bg);z-index:55;
+    display:flex;flex-direction:column;
+  }
+  .page-overlay.hidden{display:none;}
+  .page-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 12px;padding-top:calc(16px + env(safe-area-inset-top));
+    border-bottom:1px solid var(--line);background:var(--card);flex:none;
+  }
+  .page-header h2{font-size:17px;margin:0;font-weight:700;}
+  .page-close{background:none;border:none;font-size:26px;line-height:1;color:var(--ink-soft);padding:4px 10px;}
+  .page-body{flex:1;overflow-y:auto;padding:16px;max-width:480px;margin:0 auto;width:100%;box-sizing:border-box;}
+
+  .summary-card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px;margin-bottom:12px;cursor:pointer;
+  }
+  .sc-top{display:flex;align-items:center;justify-content:space-between;}
+  .sc-top .case-number{
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;
+    font-variant-numeric:tabular-nums;font-size:17px;font-weight:700;
+  }
+  .sc-sub{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .sc-stats{display:flex;gap:10px;margin-top:12px;}
+  .sc-stat{flex:1;background:#F5F6F4;border-radius:10px;padding:10px 12px;}
+  .sc-stat .k{font-size:11px;color:var(--ink-soft);}
+  .sc-stat .v{
+    font-size:17px;font-weight:700;margin-top:2px;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;
+  }
+  .sc-dates{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-top:10px;gap:10px;}
+  .sc-dates div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .month-switcher{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .month-nav{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    width:44px;height:44px;font-size:20px;color:var(--route);
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .month-label{font-size:17px;font-weight:700;}
+  .stat-row{display:flex;gap:10px;margin-bottom:10px;}
+  .stat-cell{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .stat-cell .label{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .stat-cell .value{
+    font-variant-numeric:tabular-nums;font-family:"SF Mono",ui-monospace,Menlo,monospace;
+    font-size:20px;font-weight:700;
+  }
+  .month-table-wrap{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:4px 12px;overflow-x:auto;
+  }
+  .month-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap;}
+  .month-table th, .month-table td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--line);}
+  .month-table th:first-child, .month-table td:first-child{text-align:left;}
+  .month-table tr:last-child td{border-bottom:none;}
+  .month-table th{color:var(--ink-soft);font-weight:600;font-size:11.5px;}
+  .month-table td{font-variant-numeric:tabular-nums;font-family:"SF Mono",ui-monospace,Menlo,monospace;}
+  .month-table td:first-child{font-family:inherit;}
+
+  .menu-list .btn-secondary{margin-bottom:10px;justify-content:flex-start;padding-left:18px;}
+  .month-toggle-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;}
+  .month-toggle{
+    padding:10px 0;text-align:center;border-radius:10px;
+    border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
+    font-size:13px;font-weight:700;
+  }
+  .month-toggle.month-active{background:var(--route);border-color:var(--route);color:#fff;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>仕事記録</h1>
+  <div class="today" id="todayLabel"></div>
+  <button class="menu-btn" id="menuBtn" aria-label="メニュー">☰</button>
+</header>
+
+<div class="wrap">
+
+  <div class="status-card" id="statusCard">
+    <div class="status-label">現在の状況</div>
+    <div class="status-main">
+      <div class="status-dot"></div>
+      <div class="status-title" id="statusTitle">記録なし</div>
+    </div>
+    <div class="timer" id="timerDisplay" style="display:none;">00:00:00</div>
+    <div class="status-sub" id="statusSub"></div>
+    <div class="status-stop" id="statusStopWrap" style="display:none;">
+      <button class="btn btn-stop" id="stopBtn">終了する</button>
+    </div>
+  </div>
+
+  <div class="start-grid" id="startGrid">
+    <button class="btn start-intake" id="startIntakeBtn"><span class="gicon">📝</span>説明書作成</button>
+    <button class="btn start-review" id="startReviewBtn"><span class="gicon">🔍</span>内容確認</button>
+    <button class="btn start-appointment" id="startAppointmentBtn"><span class="gicon">📞</span>面談アポイント</button>
+    <button class="btn start-travel" id="startTravelBtn"><span class="gicon">🚗</span>移動</button>
+    <button class="btn start-meeting" id="startMeetingBtn"><span class="gicon">🤝</span>面談</button>
+    <button class="btn start-insurer" id="startInsurerBtn"><span class="gicon">📋</span>打ち合わせ</button>
+    <button class="btn start-report span2" id="startReportBtn"><span class="gicon">💻</span>レポート作成</button>
+  </div>
+  <div style="text-align:center;margin-top:8px;">
+    <button class="btn-ghost" id="manualBtn">移動を手入力で記録を追加</button>
+  </div>
+
+  <div class="summary">
+    <div class="cell">
+      <div class="label">今日の移動時間</div>
+      <div class="value" id="todayTime">0分</div>
+    </div>
+    <div class="cell">
+      <div class="label">今日の走行距離</div>
+      <div class="value" id="todayDist">0km</div>
+    </div>
+  </div>
+
+  <div class="section-title">案件</div>
+  <div id="caseList"></div>
+  <button class="btn btn-secondary" id="newCaseBtn">＋ 新しい案件を登録</button>
+  <div style="margin-top:10px;">
+    <button class="btn btn-secondary" id="viewSummaryBtn">📊 案件別集計を見る</button>
+  </div>
+  <div style="margin-top:10px;">
+    <button class="btn btn-secondary" id="viewMonthlyBtn">🗓 月合計を見る</button>
+  </div>
+  <div style="margin-top:10px;">
+    <button class="btn btn-secondary" id="viewYearlyBtn">📅 年合計を見る</button>
+  </div>
+
+  <div class="section-title">履歴</div>
+  <div id="history"></div>
+
+</div>
+
+<!-- 移動：開始 -->
+<div class="overlay hidden" id="startOverlay">
+  <div class="sheet">
+    <h2>移動を開始</h2>
+    <div class="field text">
+      <label>案件を選択</label>
+      <select id="startCaseSelect"></select>
+    </div>
+    <div class="field">
+      <label>開始オドメーター(km)</label>
+      <input type="number" inputmode="numeric" id="startOdoInput" placeholder="例：60500">
+    </div>
+    <div class="err" id="startErr">案件と開始オドメーターを入力してください</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="startCancel">キャンセル</button>
+      <button class="btn btn-primary" id="startConfirm">開始する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 移動：終了 -->
+<div class="overlay hidden" id="endOverlay">
+  <div class="sheet">
+    <h2>移動を終了</h2>
+    <div class="field">
+      <label>終了オドメーター(km)</label>
+      <input type="number" inputmode="numeric" id="endOdoInput" placeholder="例：60510">
+    </div>
+    <div class="err" id="endErr">終了オドメーターは開始より大きい数字にしてください</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="endCancel">キャンセル</button>
+      <button class="btn btn-stop" id="endConfirm">終了する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 移動：手入力 -->
+<div class="overlay hidden" id="manualOverlay">
+  <div class="sheet">
+    <h2>移動を手入力で追加</h2>
+    <div class="field text">
+      <label>案件を選択</label>
+      <select id="manCaseSelect"></select>
+    </div>
+    <div class="field text">
+      <label>日付</label>
+      <input type="date" id="manDate">
+    </div>
+    <div class="field text">
+      <label>開始時刻</label>
+      <input type="time" id="manStart">
+    </div>
+    <div class="field text">
+      <label>終了時刻</label>
+      <input type="time" id="manEnd">
+    </div>
+    <div class="field">
+      <label>開始オドメーター(km)</label>
+      <input type="number" inputmode="numeric" id="manStartOdo">
+    </div>
+    <div class="field">
+      <label>終了オドメーター(km)</label>
+      <input type="number" inputmode="numeric" id="manEndOdo">
+    </div>
+    <div class="err" id="manErr">入力内容を確認してください</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="manCancel">キャンセル</button>
+      <button class="btn btn-primary" id="manConfirm">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 案件受付／内容確認／面談アポイント／面談／打ち合わせ／レポート作成：開始（共通モーダル） -->
+<div class="overlay hidden" id="workStartOverlay">
+  <div class="sheet">
+    <h2 id="workStartTitle">開始</h2>
+    <div class="field text">
+      <label>案件を選択</label>
+      <select id="workCaseSelect"></select>
+    </div>
+    <div class="field text hidden-field" id="workLocationField">
+      <label>場所</label>
+      <input type="text" id="workLocationInput" placeholder="例：名古屋市○○区">
+    </div>
+    <div class="field text">
+      <label>メモ（任意）</label>
+      <textarea id="workMemoInput"></textarea>
+    </div>
+    <div class="err" id="workStartErr">案件を選択してください</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="workStartCancel">キャンセル</button>
+      <button class="btn btn-primary" id="workStartConfirm">開始する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 案件登録 -->
+<div class="overlay hidden" id="caseOverlay">
+  <div class="sheet">
+    <h2>案件を登録</h2>
+    <div class="field text">
+      <label>案件番号（必須）</label>
+      <input type="text" id="caseNumberInput" placeholder="例：ABC12345">
+    </div>
+    <div class="field text">
+      <label>保険会社</label>
+      <select id="caseInsurerSelect"></select>
+      <div class="field-hint">未登録の場合はメニュー→保険会社管理から追加できます</div>
+    </div>
+    <div class="field text">
+      <label>案件名</label>
+      <select id="caseNameSelect"></select>
+      <div class="field-hint">未登録の場合はメニュー→案件名管理から追加できます</div>
+    </div>
+    <div class="field text">
+      <label>場所</label>
+      <input type="text" id="caseLocationInput" placeholder="例：名古屋市○○区">
+    </div>
+    <div class="field text">
+      <label>案件受付日時</label>
+      <input type="datetime-local" id="caseReceivedInput">
+    </div>
+    <div class="field text">
+      <label>メモ</label>
+      <textarea id="caseMemoInput"></textarea>
+    </div>
+    <div class="err" id="caseErr">案件番号を入力してください（すでに登録済みの番号です、の場合もあります）</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="caseCancel">キャンセル</button>
+      <button class="btn btn-primary" id="caseConfirm">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 案件詳細 -->
+<div class="overlay hidden" id="caseDetailOverlay">
+  <div class="sheet" id="caseDetailSheet"></div>
+</div>
+
+<!-- 経費登録 -->
+<div class="overlay hidden" id="expenseOverlay">
+  <div class="sheet">
+    <h2>経費を追加</h2>
+    <div class="field text">
+      <label>種類</label>
+      <select id="expTypeSelect">
+        <option value="car">🚗 自家用車</option>
+        <option value="highway">🛣️ 高速道路</option>
+        <option value="transit">🚃 公共交通機関</option>
+        <option value="coffee">☕ 喫茶代</option>
+        <option value="parking">🅿️ 駐車場</option>
+        <option value="other">📎 その他</option>
+      </select>
+    </div>
+    <div class="field text">
+      <label>日付</label>
+      <input type="date" id="expDateInput">
+    </div>
+    <div class="field text" id="expCarField">
+      <label>移動距離（まだ経費にしていない分・自動計算）</label>
+      <div class="exp-amount-display" id="expDistanceDisplay">0km</div>
+      <div class="season-toggle">
+        <button type="button" class="season-btn season-active" id="seasonNormalBtn">通常</button>
+        <button type="button" class="season-btn" id="seasonWinterBtn">冬季</button>
+      </div>
+      <div class="field-hint">計算金額：<strong id="expCarAmount">0円</strong></div>
+    </div>
+    <div class="field hidden-field" id="expAmountField">
+      <label>金額(円)</label>
+      <input type="number" inputmode="numeric" id="expAmountInput" placeholder="例：500">
+    </div>
+    <div class="field text">
+      <label>メモ（任意）</label>
+      <textarea id="expMemoInput"></textarea>
+    </div>
+    <div class="err" id="expErr">金額を入力してください</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="expCancel">キャンセル</button>
+      <button class="btn btn-primary" id="expConfirm">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 案件別集計ページ -->
+<div class="page-overlay hidden" id="summaryOverlay">
+  <div class="page-header">
+    <div style="width:36px;"></div>
+    <h2>案件別集計</h2>
+    <button class="page-close" id="summaryCloseBtn">×</button>
+  </div>
+  <div class="page-body" id="summaryBody"></div>
+</div>
+
+<!-- 月合計ページ -->
+<div class="page-overlay hidden" id="monthlyOverlay">
+  <div class="page-header">
+    <div style="width:36px;"></div>
+    <h2>月合計</h2>
+    <button class="page-close" id="monthlyCloseBtn">×</button>
+  </div>
+  <div class="page-body">
+    <div class="month-switcher">
+      <button class="month-nav" id="prevMonthBtn">‹</button>
+      <div class="month-label" id="monthlyLabel"></div>
+      <button class="month-nav" id="nextMonthBtn">›</button>
+    </div>
+    <div id="monthlyBody"></div>
+  </div>
+</div>
+
+<!-- 年合計ページ -->
+<div class="page-overlay hidden" id="yearlyOverlay">
+  <div class="page-header">
+    <div style="width:36px;"></div>
+    <h2>年合計</h2>
+    <button class="page-close" id="yearlyCloseBtn">×</button>
+  </div>
+  <div class="page-body">
+    <div class="month-switcher">
+      <button class="month-nav" id="prevYearBtn">‹</button>
+      <div class="month-label" id="yearlyLabel"></div>
+      <button class="month-nav" id="nextYearBtn">›</button>
+    </div>
+    <div id="yearlyBody"></div>
+  </div>
+</div>
+
+<!-- ハンバーガーメニュー（設定） -->
+<div class="page-overlay hidden" id="menuOverlay">
+  <div class="page-header">
+    <div style="width:36px;"></div>
+    <h2>設定</h2>
+    <button class="page-close" id="menuClose">×</button>
+  </div>
+  <div class="page-body menu-list">
+    <button class="btn btn-secondary" id="menuInsurerBtn">🏢 保険会社管理</button>
+    <button class="btn btn-secondary" id="menuCaseNameBtn">🏷️ 案件名管理</button>
+    <button class="btn btn-secondary" id="menuExpenseSettingsBtn">💴 経費設定</button>
+    <button class="btn btn-secondary" id="menuBackupBtn">💾 データバックアップ</button>
+    <button class="btn btn-secondary" id="menuRestoreBtn">📥 データ復元</button>
+  </div>
+</div>
+<input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
+
+<!-- 保険会社／案件名 管理ページ（共通） -->
+<div class="page-overlay hidden" id="listManagerOverlay">
+  <div class="page-header">
+    <div style="width:36px;"></div>
+    <h2 id="listManagerTitle">管理</h2>
+    <button class="page-close" id="listManagerClose">×</button>
+  </div>
+  <div class="page-body">
+    <button class="btn btn-secondary" id="listManagerAddBtn">＋ 追加</button>
+    <div id="listManagerBody" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- 名称の追加／編集 -->
+<div class="overlay hidden" id="nameEditOverlay">
+  <div class="sheet">
+    <h2 id="nameEditTitle">追加</h2>
+    <div class="field text">
+      <input type="text" id="nameEditInput" placeholder="名称を入力">
+    </div>
+    <div class="err" id="nameEditErr">名称を入力してください</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="nameEditCancel">キャンセル</button>
+      <button class="btn btn-primary" id="nameEditConfirm">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 経費設定ページ -->
+<div class="page-overlay hidden" id="expenseSettingsOverlay">
+  <div class="page-header">
+    <div style="width:36px;"></div>
+    <h2>経費設定</h2>
+    <button class="page-close" id="expSettingsClose">×</button>
+  </div>
+  <div class="page-body">
+    <div class="field">
+      <label>通常単価（円/km）</label>
+      <input type="number" inputmode="numeric" id="normalRateInput">
+    </div>
+    <div class="field">
+      <label>冬季単価（円/km）</label>
+      <input type="number" inputmode="numeric" id="winterRateInput">
+    </div>
+    <div class="field text">
+      <label>冬季の対象月</label>
+      <div class="month-toggle-grid" id="winterMonthGrid"></div>
+    </div>
+    <button class="btn btn-primary" id="expSettingsSave">保存する</button>
+  </div>
+</div>
+
+<!-- 削除確認（window.confirm は環境によって動かないことがあるため使わない） -->
+<div class="overlay hidden" id="confirmOverlay">
+  <div class="sheet">
+    <h2 id="confirmTitle">削除しますか？</h2>
+    <p id="confirmMessage" style="font-size:14px;color:var(--ink-soft);margin:-6px 0 18px 0;"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="confirmCancel">キャンセル</button>
+      <button class="btn" id="confirmOk" style="background:var(--danger);color:#fff;">削除する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================
+   データ保存について：
+   このアプリはブラウザの localStorage にデータを保存します。
+   サーバーには送信されません。index.html 1つで動作し、
+   外部ライブラリには依存していません。
+   （以前のバージョンでこの画面内に保存していたデータがあれば、
+   初回起動時に自動的に localStorage へ引き継ぎます）
+========================================================== */
+
+const STORAGE_ACTIVE = 'active-travel';
+const STORAGE_RECORDS = 'travel-records';
+const STORAGE_CASES = 'cases';
+const STORAGE_EXPENSES = 'expenses';
+const STORAGE_INSURERS = 'insurers';
+const STORAGE_CASE_NAMES = 'case-names';
+const STORAGE_EXPENSE_SETTINGS = 'expense-settings';
+const STORAGE_MIGRATED_FLAG = 'migrated-from-window-storage';
+
+const WORK_TYPES = {
+  intake:      { label:'説明書作成',     icon:'📝', hasOdo:false, hasLocation:false },
+  review:      { label:'内容確認',       icon:'🔍', hasOdo:false, hasLocation:false },
+  appointment: { label:'面談アポイント',  icon:'📞', hasOdo:false, hasLocation:false },
+  travel:      { label:'移動',           icon:'🚗', hasOdo:true,  hasLocation:false },
+  meeting:     { label:'面談',           icon:'🤝', hasOdo:false, hasLocation:true  },
+  insurer:     { label:'保険会社打ち合わせ', icon:'📋', hasOdo:false, hasLocation:true  },
+  report:      { label:'レポート作成',    icon:'💻', hasOdo:false, hasLocation:false }
+};
+const EXPENSE_TYPES = {
+  car:      { label:'自家用車',       icon:'🚗' },
+  highway:  { label:'高速道路',       icon:'🛣️' },
+  transit:  { label:'公共交通機関',   icon:'🚃' },
+  coffee:   { label:'喫茶代',         icon:'☕' },
+  parking:  { label:'駐車場',         icon:'🅿️' },
+  other:    { label:'その他',         icon:'📎' }
+};
+const DEFAULT_EXPENSE_SETTINGS = { normalRate:35, winterRate:40, winterMonths:[12,1,2] };
+
+let active = null;
+let records = [];
+let cases = [];
+let expenses = [];
+let insurers = [];
+let caseNames = [];
+let expenseSettings = { ...DEFAULT_EXPENSE_SETTINGS };
+let timerInterval = null;
+let pendingDelete = null;      // {type, id}
+let pendingRestoreData = null;
+let startingType = null;
+let currentDetailCaseId = null;
+let caseDetailShowAll = false; // 案件詳細の作業履歴を全件表示中かどうか
+let historyShowAll = false;    // トップ画面の履歴を全件表示中かどうか
+let expSeason = 'normal';
+let expSubmitting = false;
+let monthCursor = new Date();
+let yearCursor = new Date().getFullYear();
+let listManagerKind = null;    // 'insurer' | 'caseName'
+let nameEditTarget = null;     // {kind, id}
+let tempWinterMonths = [];
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function makeId(prefix){
+  return prefix + Date.now() + Math.random().toString(36).slice(2,8);
+}
+function todayKey(d){
+  const dt = d || new Date();
+  return dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate());
+}
+function dateLabel(key){
+  const [y,m,d] = key.split('-');
+  return `${y}/${m}/${d}`;
+}
+function timeLabel(iso){
+  const d = new Date(iso);
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function dateTimeLabel(iso){
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function nowForInput(){
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function durationLabel(ms){
+  const totalMin = Math.round(ms/60000);
+  const h = Math.floor(totalMin/60);
+  const m = totalMin % 60;
+  if(h>0) return `${h}時間${m}分`;
+  return `${m}分`;
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1600);
+}
+function migrateRecord(r){
+  if(!r.type) r.type = 'travel';
+  return r;
+}
+
+// ---- localStorage ヘルパー ----
+function lsGet(key){
+  try{ return localStorage.getItem(key); }catch(e){ console.error('localStorage get error', e); return null; }
+}
+function lsSet(key, value){
+  try{ localStorage.setItem(key, value); return true; }catch(e){ console.error('localStorage set error', e); return false; }
+}
+function lsDel(key){
+  try{ localStorage.removeItem(key); }catch(e){ /* noop */ }
+}
+
+// 以前のバージョン（画面内ストレージ）にデータがあれば、初回だけ localStorage へ引き継ぐ
+async function migrateFromLegacyStorage(){
+  if(localStorage.getItem(STORAGE_MIGRATED_FLAG)) return;
+  if(typeof window.storage !== 'undefined'){
+    const keys = [STORAGE_ACTIVE, STORAGE_RECORDS, STORAGE_CASES, STORAGE_EXPENSES];
+    for(const k of keys){
+      try{
+        const r = await window.storage.get(k, false);
+        if(r && r.value) localStorage.setItem(k, r.value);
+      }catch(e){ /* 該当データなし */ }
+    }
+  }
+  localStorage.setItem(STORAGE_MIGRATED_FLAG, '1');
+}
+
+async function loadState(){
+  try{
+    const v = lsGet(STORAGE_ACTIVE);
+    active = v ? JSON.parse(v) : null;
+    if(active && !active.type) active.type = 'travel';
+  }catch(e){ active = null; }
+  try{
+    const v = lsGet(STORAGE_RECORDS);
+    records = v ? JSON.parse(v).map(migrateRecord) : [];
+  }catch(e){ records = []; }
+  try{
+    const v = lsGet(STORAGE_CASES);
+    cases = v ? JSON.parse(v) : [];
+  }catch(e){ cases = []; }
+  try{
+    const v = lsGet(STORAGE_EXPENSES);
+    expenses = v ? JSON.parse(v) : [];
+  }catch(e){ expenses = []; }
+  try{
+    const v = lsGet(STORAGE_INSURERS);
+    insurers = v ? JSON.parse(v) : [];
+  }catch(e){ insurers = []; }
+  try{
+    const v = lsGet(STORAGE_CASE_NAMES);
+    caseNames = v ? JSON.parse(v) : [];
+  }catch(e){ caseNames = []; }
+  try{
+    const v = lsGet(STORAGE_EXPENSE_SETTINGS);
+    expenseSettings = v ? JSON.parse(v) : { ...DEFAULT_EXPENSE_SETTINGS };
+  }catch(e){ expenseSettings = { ...DEFAULT_EXPENSE_SETTINGS }; }
+}
+
+async function saveActive(){
+  if(active === null) lsDel(STORAGE_ACTIVE);
+  else lsSet(STORAGE_ACTIVE, JSON.stringify(active));
+}
+async function saveRecords(){
+  if(!lsSet(STORAGE_RECORDS, JSON.stringify(records))) showToast('保存に失敗しました');
+}
+async function saveCases(){
+  if(!lsSet(STORAGE_CASES, JSON.stringify(cases))) showToast('保存に失敗しました');
+}
+async function saveExpenses(){
+  if(!lsSet(STORAGE_EXPENSES, JSON.stringify(expenses))) showToast('保存に失敗しました');
+}
+async function saveInsurers(){
+  if(!lsSet(STORAGE_INSURERS, JSON.stringify(insurers))) showToast('保存に失敗しました');
+}
+async function saveCaseNames(){
+  if(!lsSet(STORAGE_CASE_NAMES, JSON.stringify(caseNames))) showToast('保存に失敗しました');
+}
+async function saveExpenseSettings(){
+  if(!lsSet(STORAGE_EXPENSE_SETTINGS, JSON.stringify(expenseSettings))) showToast('保存に失敗しました');
+}
+
+function caseLabel(c){
+  const parts = [c.caseNumber, c.insurer, c.caseName].filter(Boolean);
+  return parts.join('　');
+}
+function populateCaseSelect(selectEl, selectedId){
+  selectEl.innerHTML = '<option value="">案件を選択してください</option>' +
+    cases.map(c => `<option value="${c.id}"${c.id===selectedId?' selected':''}>${caseLabel(c)}</option>`).join('');
+}
+function populateSelectFromList(selectEl, list, currentVal){
+  selectEl.innerHTML = '<option value="">選択してください</option>' +
+    list.map(i => `<option value="${i.name}"${i.name===currentVal?' selected':''}>${i.name}</option>`).join('');
+}
+
+function render(){
+  const card = document.getElementById('statusCard');
+  const title = document.getElementById('statusTitle');
+  const sub = document.getElementById('statusSub');
+  const timerEl = document.getElementById('timerDisplay');
+  const grid = document.getElementById('startGrid');
+  const stopWrap = document.getElementById('statusStopWrap');
+  const stopBtn = document.getElementById('stopBtn');
+
+  if(active){
+    const cfg = WORK_TYPES[active.type] || WORK_TYPES.travel;
+    card.classList.add('is-active');
+    title.textContent = `${cfg.icon} ${cfg.label}中`;
+    const subLines = [];
+    if(active.caseNumber) subLines.push('案件：' + active.caseNumber);
+    if(active.location) subLines.push('場所：' + active.location);
+    if(cfg.hasOdo && active.startOdo != null) subLines.push('開始オドメーター ' + active.startOdo.toLocaleString() + 'km');
+    subLines.push('開始 ' + timeLabel(active.startTime));
+    sub.innerHTML = subLines.join('<br>');
+    timerEl.style.display = 'block';
+    grid.style.display = 'none';
+    stopWrap.style.display = 'block';
+    stopBtn.textContent = `🛑 ${cfg.label}を終了`;
+    startTimerTick();
+  }else{
+    card.classList.remove('is-active');
+    title.textContent = '記録なし';
+    sub.textContent = '';
+    timerEl.style.display = 'none';
+    grid.style.display = 'grid';
+    stopWrap.style.display = 'none';
+    stopTimerTick();
+  }
+
+  renderSummary();
+  renderCases();
+  renderHistory();
+}
+
+function startTimerTick(){
+  stopTimerTick();
+  const el = document.getElementById('timerDisplay');
+  function tick(){
+    const ms = Date.now() - new Date(active.startTime).getTime();
+    const totalSec = Math.max(0, Math.floor(ms/1000));
+    const h = Math.floor(totalSec/3600);
+    const m = Math.floor((totalSec%3600)/60);
+    const s = totalSec%60;
+    el.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+  tick();
+  timerInterval = setInterval(tick, 1000);
+}
+function stopTimerTick(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+}
+
+function renderSummary(){
+  const key = todayKey();
+  const todays = records.filter(r => r.type === 'travel' && r.date === key);
+  const totalMs = todays.reduce((sum,r)=> sum + (new Date(r.endTime) - new Date(r.startTime)), 0);
+  const totalDist = todays.reduce((sum,r)=> sum + r.distance, 0);
+  document.getElementById('todayTime').textContent = totalMs>0 ? durationLabel(totalMs) : '0分';
+  document.getElementById('todayDist').textContent = totalDist.toLocaleString() + 'km';
+}
+
+function renderCases(){
+  const el = document.getElementById('caseList');
+  if(cases.length === 0){
+    el.innerHTML = '<div class="empty">まだ案件が登録されていません<br>「＋ 新しい案件を登録」から追加できます</div>';
+    return;
+  }
+  const sorted = cases.slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  let html = '';
+  sorted.forEach(c => {
+    const sub = [c.insurer, c.caseName, c.location].filter(Boolean).join('　／　');
+    const badge = c.reportedAt ? '<span class="badge-done">報告済み</span>' : '';
+    html += `
+      <div class="record case-record" data-case-id="${c.id}">
+        <div class="icon">📁</div>
+        <div class="body">
+          <div class="row1 case-number">${c.caseNumber}${badge}</div>
+          <div class="row2">${sub || 'ー'}</div>
+        </div>
+        <button class="del" data-id="${c.id}">🗑</button>
+      </div>`;
+  });
+  el.innerHTML = html;
+
+  el.querySelectorAll('.case-record').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if(e.target.closest('.del')) return;
+      openCaseDetail(row.getAttribute('data-case-id'));
+    });
+  });
+  el.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = e.currentTarget.getAttribute('data-id');
+      askDelete('case', id, 'この案件を削除します（紐づく作業記録は削除されません）。');
+    });
+  });
+}
+
+function recordLines(r){
+  const cfg = WORK_TYPES[r.type] || WORK_TYPES.travel;
+  const dur = durationLabel(new Date(r.endTime) - new Date(r.startTime));
+  const row1 = `${cfg.icon} ${cfg.label}　${timeLabel(r.startTime)}～${timeLabel(r.endTime)}　${dur}`;
+  const bits = [];
+  if(r.caseNumber) bits.push('案件：' + r.caseNumber);
+  if(r.type === 'travel'){
+    bits.push(`${r.distance.toLocaleString()}km（${r.startOdo.toLocaleString()} → ${r.endOdo.toLocaleString()}）`);
+  }else{
+    if(r.location) bits.push('場所：' + r.location);
+    if(r.memo) bits.push(r.memo);
+  }
+  return { icon: cfg.icon, row1, row2: bits.join('　') || 'ー' };
+}
+
+function renderHistory(){
+  const el = document.getElementById('history');
+  if(records.length === 0){
+    el.innerHTML = '<div class="empty">まだ記録がありません<br>上のボタンから記録が始まります</div>';
+    return;
+  }
+  const sortedAll = records.slice().sort((a,b)=> new Date(b.startTime) - new Date(a.startTime));
+  const HISTORY_LIMIT = 4;
+  const subset = historyShowAll ? sortedAll : sortedAll.slice(0, HISTORY_LIMIT);
+
+  const byDate = {};
+  subset.forEach(r => {
+    if(!byDate[r.date]) byDate[r.date] = [];
+    byDate[r.date].push(r);
+  });
+  const dateKeys = Object.keys(byDate).sort().reverse();
+  let html = '';
+  dateKeys.forEach(dk => {
+    const items = byDate[dk].slice().sort((a,b)=> new Date(b.startTime) - new Date(a.startTime));
+    html += `<div class="day-group"><div class="day-heading">${dateLabel(dk)}</div>`;
+    items.forEach(r => {
+      const { icon, row1, row2 } = recordLines(r);
+      html += `
+        <div class="record">
+          <div class="icon">${icon}</div>
+          <div class="body">
+            <div class="row1">${row1}</div>
+            <div class="row2">${row2}</div>
+          </div>
+          <button class="del" data-id="${r.id}">🗑</button>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+  if(sortedAll.length > HISTORY_LIMIT){
+    html += historyShowAll
+      ? `<button class="btn btn-secondary" id="toggleMainHistoryBtn">履歴を閉じる</button>`
+      : `<button class="btn btn-secondary" id="toggleMainHistoryBtn">すべての履歴を見る（${sortedAll.length}件）</button>`;
+  }
+  el.innerHTML = html;
+
+  const toggleBtn = document.getElementById('toggleMainHistoryBtn');
+  if(toggleBtn){
+    toggleBtn.addEventListener('click', () => {
+      historyShowAll = !historyShowAll;
+      renderHistory();
+    });
+  }
+
+  el.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      askDelete('record', id, 'この記録を削除します。元に戻せません。');
+    });
+  });
+}
+
+function caseTravelDistance(caseId){
+  return records
+    .filter(r => r.type === 'travel' && r.caseId === caseId)
+    .reduce((sum,r)=> sum + r.distance, 0);
+}
+function caseUnexpensedDistance(caseId){
+  const total = caseTravelDistance(caseId);
+  const alreadyClaimed = expenses
+    .filter(e => e.caseId === caseId && e.type === 'car')
+    .reduce((sum,e)=> sum + (e.distance || 0), 0);
+  return Math.max(0, total - alreadyClaimed);
+}
+function caseExpenseTotal(caseId){
+  return expenses
+    .filter(e => e.caseId === caseId)
+    .reduce((sum,e)=> sum + e.amount, 0);
+}
+function caseWorkDurationMs(caseId){
+  return records
+    .filter(r => r.caseId === caseId)
+    .reduce((sum,r)=> sum + (new Date(r.endTime) - new Date(r.startTime)), 0);
+}
+function expenseLines(e){
+  const cfg = EXPENSE_TYPES[e.type] || EXPENSE_TYPES.other;
+  const row1 = `${cfg.icon} ${cfg.label}　${e.date}　${e.amount.toLocaleString()}円`;
+  let row2;
+  if(e.type === 'car'){
+    const seasonLabel = e.season === 'winter' ? '冬季' : '通常';
+    row2 = `${e.distance.toLocaleString()}km × ${e.rate}円（${seasonLabel}）`;
+  }else{
+    row2 = e.memo || 'ー';
+  }
+  return { icon: cfg.icon, row1, row2 };
+}
+
+// ---- 案件詳細 ----
+function openCaseDetail(caseId){
+  const c = cases.find(c => c.id === caseId);
+  if(!c) return;
+  currentDetailCaseId = caseId;
+  caseDetailShowAll = false;
+  renderCaseDetail(c);
+  open('caseDetailOverlay');
+}
+function renderCaseDetail(c){
+  const related = records
+    .filter(r => r.caseId === c.id)
+    .sort((a,b)=> new Date(b.startTime) - new Date(a.startTime));
+  const displayed = caseDetailShowAll ? related : related.slice(0, 3);
+
+  let recordsHtml = '<div class="empty" style="padding:16px 0;">まだ作業記録がありません</div>';
+  if(displayed.length){
+    recordsHtml = displayed.map(r => {
+      const { icon, row1, row2 } = recordLines(r);
+      return `<div class="record"><div class="icon">${icon}</div><div class="body"><div class="row1">${row1}</div><div class="row2">${row2}</div></div></div>`;
+    }).join('');
+  }
+  if(related.length > 3){
+    recordsHtml += caseDetailShowAll
+      ? `<button class="btn btn-secondary" id="toggleHistoryBtn">履歴を閉じる</button>`
+      : `<button class="btn btn-secondary" id="toggleHistoryBtn">すべての履歴を見る（${related.length}件）</button>`;
+  }
+
+  const reportBlock = c.reportedAt
+    ? `<div class="detail-report reported">
+         <div class="rlabel">報告日時</div>
+         <div class="rvalue">✅ ${dateTimeLabel(c.reportedAt)}</div>
+         <button class="btn btn-cancel" id="cancelReportBtn" style="margin-top:12px;">報告を取り消す</button>
+       </div>`
+    : `<div class="detail-report">
+         <button class="btn btn-done" id="submitReportBtn">📤 報告書を提出</button>
+       </div>`;
+
+  const caseExpenses = expenses
+    .filter(e => e.caseId === c.id)
+    .sort((a,b)=> new Date(b.date) - new Date(a.date));
+  let expensesHtml = '<div class="empty" style="padding:16px 0;">まだ経費がありません</div>';
+  if(caseExpenses.length){
+    expensesHtml = caseExpenses.map(e => {
+      const { icon, row1, row2 } = expenseLines(e);
+      return `<div class="record"><div class="icon">${icon}</div><div class="body"><div class="row1">${row1}</div><div class="row2">${row2}</div></div><button class="del exp-del" data-id="${e.id}">🗑</button></div>`;
+    }).join('');
+  }
+  const expenseTotal = caseExpenseTotal(c.id);
+
+  document.getElementById('caseDetailSheet').innerHTML = `
+    <h2>案件 ${c.caseNumber}</h2>
+    <div class="detail-info">
+      <div class="detail-row"><div class="k">保険会社</div><div class="v">${c.insurer || 'ー'}</div></div>
+      <div class="detail-row"><div class="k">案件名</div><div class="v">${c.caseName || 'ー'}</div></div>
+      <div class="detail-row"><div class="k">場所</div><div class="v">${c.location || 'ー'}</div></div>
+      <div class="detail-row"><div class="k">受付日時</div><div class="v">${c.receivedAt ? dateTimeLabel(c.receivedAt) : 'ー'}</div></div>
+      <div class="detail-row" style="border-bottom:none;"><div class="k">メモ</div><div class="v">${c.memo || 'ー'}</div></div>
+    </div>
+    ${reportBlock}
+    <div class="section-title" style="margin-top:18px;">作業実績</div>
+    ${recordsHtml}
+    <div class="section-title" style="margin-top:18px;">経費</div>
+    <div class="detail-report">
+      <div class="rlabel">経費合計</div>
+      <div class="rvalue" style="color:var(--ink);">¥${expenseTotal.toLocaleString()}</div>
+    </div>
+    ${expensesHtml}
+    <button class="btn btn-secondary" id="addExpenseBtn">＋ 経費を追加</button>
+    <div class="sheet-actions" style="margin-top:16px;">
+      <button class="btn btn-cancel" id="caseDetailClose">閉じる</button>
+    </div>
+  `;
+  document.getElementById('caseDetailClose').addEventListener('click', () => close('caseDetailOverlay'));
+  document.getElementById('addExpenseBtn').addEventListener('click', () => openExpenseModal(c.id));
+  const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
+  if(toggleHistoryBtn){
+    toggleHistoryBtn.addEventListener('click', () => {
+      caseDetailShowAll = !caseDetailShowAll;
+      renderCaseDetail(c);
+    });
+  }
+  document.querySelectorAll('#caseDetailSheet .exp-del').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      askDelete('expense', id, 'この経費を削除します。元に戻せません。');
+    });
+  });
+  const submitBtn = document.getElementById('submitReportBtn');
+  if(submitBtn){
+    submitBtn.addEventListener('click', async () => {
+      c.reportedAt = new Date().toISOString();
+      await saveCases();
+      renderCaseDetail(c);
+      renderCases();
+      refreshSummaryIfOpen();
+      refreshMonthlyIfOpen();
+      refreshYearlyIfOpen();
+      showToast('報告書を提出しました');
+    });
+  }
+  const cancelReportBtn = document.getElementById('cancelReportBtn');
+  if(cancelReportBtn){
+    cancelReportBtn.addEventListener('click', () => {
+      askDelete('unreport', c.id, 'この案件の報告を取り消します。報告日時はクリアされますが、作業記録・移動記録・経費などのデータは削除されません。', '取り消す');
+    });
+  }
+}
+
+// ---- 案件別集計ページ ----
+function renderSummaryPage(){
+  const body = document.getElementById('summaryBody');
+  if(cases.length === 0){
+    body.innerHTML = '<div class="empty">まだ案件が登録されていません</div>';
+    return;
+  }
+  const sorted = cases.slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  body.innerHTML = sorted.map(c => {
+    const totalMs = caseWorkDurationMs(c.id);
+    const totalLabel = totalMs > 0 ? durationLabel(totalMs) : '0分';
+    const total = caseExpenseTotal(c.id);
+    const badge = c.reportedAt
+      ? '<span class="badge-done">報告済み</span>'
+      : '<span class="badge-pending">未報告</span>';
+    const subLine = [c.insurer, c.caseName].filter(Boolean).join('　／　') || 'ー';
+    return `
+      <div class="summary-card" data-case-id="${c.id}">
+        <div class="sc-top"><span class="case-number">${c.caseNumber}</span>${badge}</div>
+        <div class="sc-sub">${subLine}</div>
+        <div class="sc-stats">
+          <div class="sc-stat"><div class="k">総作業時間</div><div class="v">${totalLabel}</div></div>
+          <div class="sc-stat"><div class="k">経費合計</div><div class="v">¥${total.toLocaleString()}</div></div>
+        </div>
+        <div class="sc-dates">
+          <div>受付：${c.receivedAt ? dateTimeLabel(c.receivedAt) : 'ー'}</div>
+          <div>報告：${c.reportedAt ? dateTimeLabel(c.reportedAt) : 'ー'}</div>
+        </div>
+      </div>`;
+  }).join('');
+  body.querySelectorAll('.summary-card').forEach(card => {
+    card.addEventListener('click', () => openCaseDetail(card.getAttribute('data-case-id')));
+  });
+}
+function refreshSummaryIfOpen(){
+  if(!document.getElementById('summaryOverlay').classList.contains('hidden')) renderSummaryPage();
+}
+document.getElementById('viewSummaryBtn').addEventListener('click', () => {
+  renderSummaryPage();
+  open('summaryOverlay');
+});
+document.getElementById('summaryCloseBtn').addEventListener('click', () => close('summaryOverlay'));
+
+// ---- 月合計ページ（報告書を提出した月を基準に集計） ----
+function monthKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+function monthLabel(d){ return `${d.getFullYear()}年${d.getMonth()+1}月`; }
+function casesReportedInMonth(d){
+  const key = monthKey(d);
+  return cases.filter(c => c.reportedAt && monthKey(new Date(c.reportedAt)) === key);
+}
+function renderMonthlyPage(){
+  document.getElementById('monthlyLabel').textContent = monthLabel(monthCursor);
+  const matched = casesReportedInMonth(monthCursor);
+  const body = document.getElementById('monthlyBody');
+
+  let totalMs = 0, totalExpense = 0;
+  const byType = { car:0, highway:0, transit:0, coffee:0, parking:0, other:0 };
+  matched.forEach(c => {
+    totalMs += caseWorkDurationMs(c.id);
+    expenses.filter(e => e.caseId === c.id).forEach(e => {
+      totalExpense += e.amount;
+      byType[e.type] = (byType[e.type] || 0) + e.amount;
+    });
+  });
+  const totalTimeLabel = totalMs > 0 ? durationLabel(totalMs) : '0分';
+
+  const caseCardsHtml = matched.length === 0
+    ? '<div class="empty">この月に報告書を提出した案件はありません</div>'
+    : matched.map(c => {
+        const ms = caseWorkDurationMs(c.id);
+        const timeLabel = ms > 0 ? durationLabel(ms) : '0分';
+        const exp = caseExpenseTotal(c.id);
+        const subLine = [c.insurer, c.caseName].filter(Boolean).join('　／　') || 'ー';
+        return `
+          <div class="summary-card" data-case-id="${c.id}">
+            <div class="sc-top"><span class="case-number">${c.caseNumber}</span></div>
+            <div class="sc-sub">${subLine}</div>
+            <div class="sc-stats">
+              <div class="sc-stat"><div class="k">総作業時間</div><div class="v">${timeLabel}</div></div>
+              <div class="sc-stat"><div class="k">総経費</div><div class="v">¥${exp.toLocaleString()}</div></div>
+            </div>
+          </div>`;
+      }).join('');
+
+  body.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-cell"><div class="label">報告案件数</div><div class="value">${matched.length}件</div></div>
+      <div class="stat-cell"><div class="label">総作業時間</div><div class="value">${totalTimeLabel}</div></div>
+    </div>
+    <div class="stat-cell" style="margin-bottom:16px;">
+      <div class="label">総経費</div>
+      <div class="value" style="font-size:26px;">¥${totalExpense.toLocaleString()}</div>
+    </div>
+    <div class="section-title" style="margin-top:0;">経費内訳</div>
+    <div class="detail-info">
+      <div class="detail-row"><div class="k">🚗 自家用車</div><div class="v">¥${byType.car.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">🛣️ 高速道路</div><div class="v">¥${byType.highway.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">🚃 公共交通機関</div><div class="v">¥${byType.transit.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">☕ 喫茶代</div><div class="v">¥${byType.coffee.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">🅿️ 駐車場</div><div class="v">¥${byType.parking.toLocaleString()}</div></div>
+      <div class="detail-row" style="border-bottom:none;"><div class="k">📎 その他</div><div class="v">¥${byType.other.toLocaleString()}</div></div>
+    </div>
+    <div class="section-title">対象月の案件</div>
+    ${caseCardsHtml}
+  `;
+  body.querySelectorAll('.summary-card').forEach(card => {
+    card.addEventListener('click', () => openCaseDetail(card.getAttribute('data-case-id')));
+  });
+}
+function refreshMonthlyIfOpen(){
+  if(!document.getElementById('monthlyOverlay').classList.contains('hidden')) renderMonthlyPage();
+}
+document.getElementById('viewMonthlyBtn').addEventListener('click', () => {
+  monthCursor = new Date();
+  renderMonthlyPage();
+  open('monthlyOverlay');
+});
+document.getElementById('monthlyCloseBtn').addEventListener('click', () => close('monthlyOverlay'));
+document.getElementById('prevMonthBtn').addEventListener('click', () => {
+  monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1);
+  renderMonthlyPage();
+});
+document.getElementById('nextMonthBtn').addEventListener('click', () => {
+  monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
+  renderMonthlyPage();
+});
+
+// ---- 年合計ページ（報告書を提出した年を基準に集計） ----
+function casesReportedInYear(year){
+  return cases.filter(c => c.reportedAt && new Date(c.reportedAt).getFullYear() === year);
+}
+function renderYearlyPage(){
+  document.getElementById('yearlyLabel').textContent = `${yearCursor}年`;
+  const matched = casesReportedInYear(yearCursor);
+  const body = document.getElementById('yearlyBody');
+
+  let totalMs = 0, totalExpense = 0;
+  const byType = { car:0, highway:0, transit:0, coffee:0, parking:0, other:0 };
+  const perMonth = Array.from({length:12}, () => ({ count:0, ms:0, expense:0 }));
+
+  matched.forEach(c => {
+    const ms = caseWorkDurationMs(c.id);
+    const exp = caseExpenseTotal(c.id);
+    totalMs += ms;
+    totalExpense += exp;
+    const m = new Date(c.reportedAt).getMonth();
+    perMonth[m].count += 1;
+    perMonth[m].ms += ms;
+    perMonth[m].expense += exp;
+    expenses.filter(e => e.caseId === c.id).forEach(e => {
+      byType[e.type] = (byType[e.type] || 0) + e.amount;
+    });
+  });
+  const totalTimeLabel = totalMs > 0 ? durationLabel(totalMs) : '0分';
+
+  const monthRows = perMonth.map((m, i) => {
+    const label = m.ms > 0 ? durationLabel(m.ms) : '0分';
+    return `<tr><td>${i+1}月</td><td>${m.count}件</td><td>${label}</td><td>¥${m.expense.toLocaleString()}</td></tr>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-cell"><div class="label">年間報告案件数</div><div class="value">${matched.length}件</div></div>
+      <div class="stat-cell"><div class="label">年間総作業時間</div><div class="value">${totalTimeLabel}</div></div>
+    </div>
+    <div class="stat-cell" style="margin-bottom:16px;">
+      <div class="label">年間総経費</div>
+      <div class="value" style="font-size:26px;">¥${totalExpense.toLocaleString()}</div>
+    </div>
+    <div class="section-title" style="margin-top:0;">経費内訳</div>
+    <div class="detail-info">
+      <div class="detail-row"><div class="k">🚗 自家用車</div><div class="v">¥${byType.car.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">🛣️ 高速道路</div><div class="v">¥${byType.highway.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">🚃 公共交通機関</div><div class="v">¥${byType.transit.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">☕ 喫茶代</div><div class="v">¥${byType.coffee.toLocaleString()}</div></div>
+      <div class="detail-row"><div class="k">🅿️ 駐車場</div><div class="v">¥${byType.parking.toLocaleString()}</div></div>
+      <div class="detail-row" style="border-bottom:none;"><div class="k">📎 その他</div><div class="v">¥${byType.other.toLocaleString()}</div></div>
+    </div>
+    <div class="section-title">月別集計</div>
+    <div class="month-table-wrap">
+      <table class="month-table">
+        <thead><tr><th>月</th><th>件数</th><th>作業時間</th><th>経費</th></tr></thead>
+        <tbody>${monthRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+function refreshYearlyIfOpen(){
+  if(!document.getElementById('yearlyOverlay').classList.contains('hidden')) renderYearlyPage();
+}
+document.getElementById('viewYearlyBtn').addEventListener('click', () => {
+  yearCursor = new Date().getFullYear();
+  renderYearlyPage();
+  open('yearlyOverlay');
+});
+document.getElementById('yearlyCloseBtn').addEventListener('click', () => close('yearlyOverlay'));
+document.getElementById('prevYearBtn').addEventListener('click', () => {
+  yearCursor -= 1;
+  renderYearlyPage();
+});
+document.getElementById('nextYearBtn').addEventListener('click', () => {
+  yearCursor += 1;
+  renderYearlyPage();
+});
+
+// ---- modal helpers ----
+function open(id){ document.getElementById(id).classList.remove('hidden'); }
+function close(id){ document.getElementById(id).classList.add('hidden'); }
+
+function askDelete(type, id, message, okLabel){
+  pendingDelete = { type, id };
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmOk').textContent = okLabel || '削除する';
+  open('confirmOverlay');
+}
+document.getElementById('confirmCancel').addEventListener('click', () => {
+  pendingDelete = null;
+  pendingRestoreData = null;
+  close('confirmOverlay');
+});
+document.getElementById('confirmOk').addEventListener('click', async () => {
+  if(!pendingDelete){ close('confirmOverlay'); return; }
+  const { type, id } = pendingDelete;
+  if(type === 'record'){
+    records = records.filter(r => r.id !== id);
+    await saveRecords();
+    render();
+    refreshSummaryIfOpen();
+    refreshMonthlyIfOpen();
+    refreshYearlyIfOpen();
+    showToast('削除しました');
+  }else if(type === 'case'){
+    cases = cases.filter(c => c.id !== id);
+    await saveCases();
+    renderCases();
+    refreshSummaryIfOpen();
+    refreshMonthlyIfOpen();
+    refreshYearlyIfOpen();
+    showToast('案件を削除しました');
+  }else if(type === 'expense'){
+    expenses = expenses.filter(e => e.id !== id);
+    await saveExpenses();
+    const c = cases.find(c => c.id === currentDetailCaseId);
+    if(c) renderCaseDetail(c);
+    refreshSummaryIfOpen();
+    refreshMonthlyIfOpen();
+    refreshYearlyIfOpen();
+    showToast('経費を削除しました');
+  }else if(type === 'unreport'){
+    const c = cases.find(c => c.id === id);
+    if(c){
+      c.reportedAt = null;
+      await saveCases();
+      renderCaseDetail(c);
+      renderCases();
+      refreshSummaryIfOpen();
+      refreshMonthlyIfOpen();
+      refreshYearlyIfOpen();
+      showToast('報告を取り消しました');
+    }
+  }else if(type === 'insurer'){
+    insurers = insurers.filter(i => i.id !== id);
+    await saveInsurers();
+    if(listManagerKind === 'insurer') renderListManagerBody();
+    showToast('削除しました');
+  }else if(type === 'caseName'){
+    caseNames = caseNames.filter(i => i.id !== id);
+    await saveCaseNames();
+    if(listManagerKind === 'caseName') renderListManagerBody();
+    showToast('削除しました');
+  }else if(type === 'restore'){
+    const data = pendingRestoreData;
+    if(data){
+      if(data.cases) lsSet(STORAGE_CASES, JSON.stringify(data.cases));
+      if(data.records) lsSet(STORAGE_RECORDS, JSON.stringify(data.records));
+      if(data.expenses) lsSet(STORAGE_EXPENSES, JSON.stringify(data.expenses));
+      if(data.insurers) lsSet(STORAGE_INSURERS, JSON.stringify(data.insurers));
+      if(data.caseNames) lsSet(STORAGE_CASE_NAMES, JSON.stringify(data.caseNames));
+      if(data.expenseSettings) lsSet(STORAGE_EXPENSE_SETTINGS, JSON.stringify(data.expenseSettings));
+      if(data.active !== undefined){
+        if(data.active === null) lsDel(STORAGE_ACTIVE);
+        else lsSet(STORAGE_ACTIVE, JSON.stringify(data.active));
+      }
+      await loadState();
+      render();
+      showToast('データを復元しました');
+    }
+    pendingRestoreData = null;
+  }
+  pendingDelete = null;
+  close('confirmOverlay');
+});
+
+function guardStart(){
+  if(active){
+    const cfg = WORK_TYPES[active.type] || WORK_TYPES.travel;
+    showToast(`現在、${cfg.label}中です。先に終了してください。`);
+    return true;
+  }
+  return false;
+}
+
+// ---- 移動：開始／終了 ----
+document.getElementById('startTravelBtn').addEventListener('click', () => {
+  if(guardStart()) return;
+  populateCaseSelect(document.getElementById('startCaseSelect'));
+  document.getElementById('startOdoInput').value = '';
+  document.getElementById('startErr').classList.remove('show');
+  open('startOverlay');
+});
+document.getElementById('startCancel').addEventListener('click', () => close('startOverlay'));
+document.getElementById('startConfirm').addEventListener('click', async () => {
+  const caseId = document.getElementById('startCaseSelect').value;
+  const val = document.getElementById('startOdoInput').value;
+  const num = Number(val);
+  if(!caseId || val === '' || isNaN(num) || num < 0){
+    document.getElementById('startErr').classList.add('show');
+    return;
+  }
+  const c = cases.find(c => c.id === caseId);
+  active = {
+    type: 'travel',
+    startTime: new Date().toISOString(),
+    startOdo: num,
+    caseId: c ? c.id : null,
+    caseNumber: c ? c.caseNumber : null
+  };
+  await saveActive();
+  close('startOverlay');
+  render();
+  showToast('移動を開始しました');
+});
+
+document.getElementById('endCancel').addEventListener('click', () => close('endOverlay'));
+document.getElementById('endConfirm').addEventListener('click', async () => {
+  const val = document.getElementById('endOdoInput').value;
+  const num = Number(val);
+  if(val === '' || isNaN(num) || num < active.startOdo){
+    document.getElementById('endErr').classList.add('show');
+    return;
+  }
+  const rec = {
+    id: makeId('r'),
+    type: 'travel',
+    date: todayKey(new Date(active.startTime)),
+    startTime: active.startTime,
+    endTime: new Date().toISOString(),
+    caseId: active.caseId || null,
+    caseNumber: active.caseNumber || null,
+    startOdo: active.startOdo,
+    endOdo: num,
+    distance: num - active.startOdo
+  };
+  records.push(rec);
+  active = null;
+  await saveActive();
+  await saveRecords();
+  close('endOverlay');
+  render();
+  showToast('移動を記録しました（' + rec.distance + 'km）');
+});
+
+// ---- 移動：手入力 ----
+document.getElementById('manualBtn').addEventListener('click', () => {
+  const now = new Date();
+  populateCaseSelect(document.getElementById('manCaseSelect'));
+  document.getElementById('manDate').value = todayKey(now);
+  document.getElementById('manStart').value = pad(now.getHours())+':'+pad(now.getMinutes());
+  document.getElementById('manEnd').value = pad(now.getHours())+':'+pad(now.getMinutes());
+  document.getElementById('manStartOdo').value = '';
+  document.getElementById('manEndOdo').value = '';
+  document.getElementById('manErr').classList.remove('show');
+  open('manualOverlay');
+});
+document.getElementById('manCancel').addEventListener('click', () => close('manualOverlay'));
+document.getElementById('manConfirm').addEventListener('click', async () => {
+  const caseId = document.getElementById('manCaseSelect').value;
+  const dateVal = document.getElementById('manDate').value;
+  const startVal = document.getElementById('manStart').value;
+  const endVal = document.getElementById('manEnd').value;
+  const startOdo = Number(document.getElementById('manStartOdo').value);
+  const endOdo = Number(document.getElementById('manEndOdo').value);
+
+  const startISO = dateVal && startVal ? new Date(`${dateVal}T${startVal}:00`).toISOString() : null;
+  const endISO = dateVal && endVal ? new Date(`${dateVal}T${endVal}:00`).toISOString() : null;
+
+  const valid = caseId && dateVal && startVal && endVal && startISO && endISO
+    && new Date(endISO) > new Date(startISO)
+    && !isNaN(startOdo) && !isNaN(endOdo) && endOdo >= startOdo;
+
+  if(!valid){
+    document.getElementById('manErr').classList.add('show');
+    return;
+  }
+  const c = cases.find(c => c.id === caseId);
+  const rec = {
+    id: makeId('r'),
+    type: 'travel',
+    date: dateVal,
+    startTime: startISO,
+    endTime: endISO,
+    caseId: c ? c.id : null,
+    caseNumber: c ? c.caseNumber : null,
+    startOdo, endOdo,
+    distance: endOdo - startOdo
+  };
+  records.push(rec);
+  await saveRecords();
+  close('manualOverlay');
+  render();
+  showToast('記録を追加しました');
+});
+
+// ---- 案件受付／内容確認／面談アポイント／面談／打ち合わせ／レポート作成：開始 ----
+function openWorkStart(type){
+  if(guardStart()) return;
+  startingType = type;
+  const cfg = WORK_TYPES[type];
+  document.getElementById('workStartTitle').textContent = `${cfg.label}を開始`;
+  document.getElementById('workLocationField').classList.toggle('hidden-field', !cfg.hasLocation);
+  populateCaseSelect(document.getElementById('workCaseSelect'));
+  document.getElementById('workLocationInput').value = '';
+  document.getElementById('workMemoInput').value = '';
+  document.getElementById('workStartErr').classList.remove('show');
+  open('workStartOverlay');
+}
+document.getElementById('startIntakeBtn').addEventListener('click', () => openWorkStart('intake'));
+document.getElementById('startReviewBtn').addEventListener('click', () => openWorkStart('review'));
+document.getElementById('startAppointmentBtn').addEventListener('click', () => openWorkStart('appointment'));
+document.getElementById('startMeetingBtn').addEventListener('click', () => openWorkStart('meeting'));
+document.getElementById('startInsurerBtn').addEventListener('click', () => openWorkStart('insurer'));
+document.getElementById('startReportBtn').addEventListener('click', () => openWorkStart('report'));
+
+document.getElementById('workStartCancel').addEventListener('click', () => close('workStartOverlay'));
+document.getElementById('workStartConfirm').addEventListener('click', async () => {
+  const caseId = document.getElementById('workCaseSelect').value;
+  if(!caseId){
+    document.getElementById('workStartErr').classList.add('show');
+    return;
+  }
+  const c = cases.find(c => c.id === caseId);
+  const cfg = WORK_TYPES[startingType];
+  active = {
+    type: startingType,
+    startTime: new Date().toISOString(),
+    caseId: c ? c.id : null,
+    caseNumber: c ? c.caseNumber : null,
+    location: cfg.hasLocation ? document.getElementById('workLocationInput').value.trim() : '',
+    memo: document.getElementById('workMemoInput').value.trim()
+  };
+  await saveActive();
+  close('workStartOverlay');
+  render();
+  showToast(`${cfg.label}を開始しました`);
+});
+
+// ---- 終了（共通の停止ボタン） ----
+document.getElementById('stopBtn').addEventListener('click', async () => {
+  if(!active) return;
+  if(active.type === 'travel'){
+    document.getElementById('endOdoInput').value = '';
+    document.getElementById('endErr').classList.remove('show');
+    open('endOverlay');
+    return;
+  }
+  const cfg = WORK_TYPES[active.type];
+  const rec = {
+    id: makeId('r'),
+    type: active.type,
+    date: todayKey(new Date(active.startTime)),
+    startTime: active.startTime,
+    endTime: new Date().toISOString(),
+    caseId: active.caseId || null,
+    caseNumber: active.caseNumber || null,
+    location: active.location || '',
+    memo: active.memo || ''
+  };
+  records.push(rec);
+  active = null;
+  await saveActive();
+  await saveRecords();
+  render();
+  showToast(`${cfg.label}を記録しました`);
+});
+
+// ---- 案件登録 ----
+document.getElementById('newCaseBtn').addEventListener('click', () => {
+  document.getElementById('caseNumberInput').value = '';
+  populateSelectFromList(document.getElementById('caseInsurerSelect'), insurers);
+  populateSelectFromList(document.getElementById('caseNameSelect'), caseNames);
+  document.getElementById('caseLocationInput').value = '';
+  document.getElementById('caseReceivedInput').value = nowForInput();
+  document.getElementById('caseMemoInput').value = '';
+  document.getElementById('caseErr').classList.remove('show');
+  open('caseOverlay');
+  document.getElementById('caseNumberInput').focus();
+});
+document.getElementById('caseCancel').addEventListener('click', () => close('caseOverlay'));
+document.getElementById('caseConfirm').addEventListener('click', async () => {
+  const caseNumber = document.getElementById('caseNumberInput').value.trim();
+  const insurer = document.getElementById('caseInsurerSelect').value;
+  const caseName = document.getElementById('caseNameSelect').value;
+  const location = document.getElementById('caseLocationInput').value.trim();
+  const receivedVal = document.getElementById('caseReceivedInput').value;
+  const memo = document.getElementById('caseMemoInput').value.trim();
+
+  const duplicate = cases.some(c => c.caseNumber === caseNumber);
+  if(!caseNumber || duplicate){
+    document.getElementById('caseErr').classList.add('show');
+    return;
+  }
+  cases.push({
+    id: makeId('c'),
+    caseNumber, insurer, caseName, location, memo,
+    receivedAt: receivedVal ? new Date(receivedVal).toISOString() : null,
+    reportedAt: null,
+    createdAt: new Date().toISOString()
+  });
+  await saveCases();
+  close('caseOverlay');
+  renderCases();
+  refreshSummaryIfOpen();
+  refreshMonthlyIfOpen();
+  refreshYearlyIfOpen();
+  showToast('案件を登録しました');
+});
+
+// ---- 経費 ----
+function updateExpenseFieldsVisibility(){
+  const type = document.getElementById('expTypeSelect').value;
+  const isCar = type === 'car';
+  document.getElementById('expCarField').classList.toggle('hidden-field', !isCar);
+  document.getElementById('expAmountField').classList.toggle('hidden-field', isCar);
+  if(isCar) updateCarAmount();
+}
+function updateCarAmount(){
+  const dist = caseUnexpensedDistance(document.getElementById('expenseOverlay').dataset.caseId);
+  const rate = expSeason === 'winter' ? expenseSettings.winterRate : expenseSettings.normalRate;
+  const amount = dist * rate;
+  document.getElementById('expDistanceDisplay').textContent = dist.toLocaleString() + 'km';
+  document.getElementById('expCarAmount').textContent = amount.toLocaleString() + '円';
+}
+function updateSeasonButtonLabels(){
+  document.getElementById('seasonNormalBtn').textContent = `通常（${expenseSettings.normalRate}円/km）`;
+  document.getElementById('seasonWinterBtn').textContent = `冬季（${expenseSettings.winterRate}円/km）`;
+}
+function setSeason(season){
+  expSeason = season;
+  document.getElementById('seasonNormalBtn').classList.toggle('season-active', season === 'normal');
+  document.getElementById('seasonWinterBtn').classList.toggle('season-active', season === 'winter');
+  updateCarAmount();
+}
+function autoDetectSeasonForDate(dateStr){
+  if(!dateStr) return 'normal';
+  const month = Number(dateStr.split('-')[1]);
+  return expenseSettings.winterMonths.includes(month) ? 'winter' : 'normal';
+}
+document.getElementById('seasonNormalBtn').addEventListener('click', () => setSeason('normal'));
+document.getElementById('seasonWinterBtn').addEventListener('click', () => setSeason('winter'));
+document.getElementById('expTypeSelect').addEventListener('change', updateExpenseFieldsVisibility);
+document.getElementById('expDateInput').addEventListener('change', () => {
+  if(document.getElementById('expTypeSelect').value === 'car'){
+    setSeason(autoDetectSeasonForDate(document.getElementById('expDateInput').value));
+  }
+});
+
+function openExpenseModal(caseId){
+  document.getElementById('expenseOverlay').dataset.caseId = caseId;
+  document.getElementById('expTypeSelect').value = 'car';
+  const today = todayKey();
+  document.getElementById('expDateInput').value = today;
+  document.getElementById('expAmountInput').value = '';
+  document.getElementById('expMemoInput').value = '';
+  document.getElementById('expErr').classList.remove('show');
+  updateSeasonButtonLabels();
+  setSeason(autoDetectSeasonForDate(today));
+  updateExpenseFieldsVisibility();
+  open('expenseOverlay');
+}
+document.getElementById('expCancel').addEventListener('click', () => close('expenseOverlay'));
+document.getElementById('expConfirm').addEventListener('click', async () => {
+  if(expSubmitting) return; // 連打による二重登録を防ぐ
+  const caseId = document.getElementById('expenseOverlay').dataset.caseId;
+  const type = document.getElementById('expTypeSelect').value;
+  const dateVal = document.getElementById('expDateInput').value;
+  const memo = document.getElementById('expMemoInput').value.trim();
+
+  if(!dateVal){
+    document.getElementById('expErr').textContent = '日付を入力してください';
+    document.getElementById('expErr').classList.add('show');
+    return;
+  }
+
+  let entry;
+  if(type === 'car'){
+    const distance = caseUnexpensedDistance(caseId);
+    const rate = expSeason === 'winter' ? expenseSettings.winterRate : expenseSettings.normalRate;
+    entry = {
+      id: makeId('e'), caseId, date: dateVal, type,
+      amount: distance * rate, distance, rate, season: expSeason, memo
+    };
+  }else{
+    const amount = Number(document.getElementById('expAmountInput').value);
+    if(document.getElementById('expAmountInput').value === '' || isNaN(amount) || amount < 0){
+      document.getElementById('expErr').textContent = '金額を入力してください';
+      document.getElementById('expErr').classList.add('show');
+      return;
+    }
+    entry = { id: makeId('e'), caseId, date: dateVal, type, amount, memo };
+  }
+  expSubmitting = true;
+  document.getElementById('expConfirm').disabled = true;
+  try{
+    expenses.push(entry);
+    await saveExpenses();
+    close('expenseOverlay');
+    const c = cases.find(c => c.id === caseId);
+    if(c) renderCaseDetail(c);
+    refreshSummaryIfOpen();
+    refreshMonthlyIfOpen();
+    refreshYearlyIfOpen();
+    showToast('経費を追加しました');
+  }finally{
+    expSubmitting = false;
+    document.getElementById('expConfirm').disabled = false;
+  }
+});
+
+// ---- ハンバーガーメニュー ----
+document.getElementById('menuBtn').addEventListener('click', () => open('menuOverlay'));
+document.getElementById('menuClose').addEventListener('click', () => close('menuOverlay'));
+document.getElementById('menuInsurerBtn').addEventListener('click', () => {
+  close('menuOverlay');
+  openListManager('insurer');
+});
+document.getElementById('menuCaseNameBtn').addEventListener('click', () => {
+  close('menuOverlay');
+  openListManager('caseName');
+});
+document.getElementById('menuExpenseSettingsBtn').addEventListener('click', () => {
+  close('menuOverlay');
+  openExpenseSettings();
+});
+document.getElementById('menuBackupBtn').addEventListener('click', () => {
+  performBackup();
+  close('menuOverlay');
+});
+document.getElementById('menuRestoreBtn').addEventListener('click', () => {
+  close('menuOverlay');
+  document.getElementById('restoreFileInput').click();
+});
+document.getElementById('restoreFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      pendingRestoreData = data;
+      askDelete('restore', null, 'バックアップファイルを復元します。現在保存されているデータはすべて上書きされます。元に戻せません。', '復元する');
+    }catch(err){
+      showToast('ファイルの読み込みに失敗しました');
+    }
+  };
+  reader.onerror = () => showToast('ファイルの読み込みに失敗しました');
+  reader.readAsText(file);
+});
+
+function performBackup(){
+  const data = {
+    exportedAt: new Date().toISOString(),
+    cases, records, expenses, insurers, caseNames, expenseSettings, active
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const now = new Date();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `work-log-backup-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('バックアップファイルを保存しました');
+}
+
+// ---- 保険会社／案件名 管理 ----
+const LIST_MANAGERS = {
+  insurer:  { title:'保険会社管理', get list(){ return insurers; }, save: saveInsurers, addLabel:'保険会社', emptyMsg:'まだ保険会社が登録されていません', delType:'insurer' },
+  caseName: { title:'案件名管理',   get list(){ return caseNames; }, save: saveCaseNames, addLabel:'案件名',   emptyMsg:'まだ案件名が登録されていません',   delType:'caseName' }
+};
+function openListManager(kind){
+  listManagerKind = kind;
+  document.getElementById('listManagerTitle').textContent = LIST_MANAGERS[kind].title;
+  renderListManagerBody();
+  open('listManagerOverlay');
+}
+function renderListManagerBody(){
+  const cfg = LIST_MANAGERS[listManagerKind];
+  const body = document.getElementById('listManagerBody');
+  const list = cfg.list;
+  if(list.length === 0){
+    body.innerHTML = `<div class="empty">${cfg.emptyMsg}</div>`;
+    return;
+  }
+  body.innerHTML = list.map(item => `
+    <div class="record">
+      <div class="body"><div class="row1">${item.name}</div></div>
+      <button class="del" data-id="${item.id}" data-action="edit" style="color:var(--route);">✏️</button>
+      <button class="del" data-id="${item.id}" data-action="del">🗑</button>
+    </div>`).join('');
+  body.querySelectorAll('button[data-action="edit"]').forEach(btn => {
+    btn.addEventListener('click', (e) => openNameEdit(listManagerKind, e.currentTarget.getAttribute('data-id')));
+  });
+  body.querySelectorAll('button[data-action="del"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const cfg2 = LIST_MANAGERS[listManagerKind];
+      askDelete(cfg2.delType, e.currentTarget.getAttribute('data-id'), 'この項目を削除します。既存の案件データには影響しません。');
+    });
+  });
+}
+document.getElementById('listManagerAddBtn').addEventListener('click', () => openNameEdit(listManagerKind, null));
+document.getElementById('listManagerClose').addEventListener('click', () => close('listManagerOverlay'));
+
+function openNameEdit(kind, id){
+  nameEditTarget = { kind, id };
+  const cfg = LIST_MANAGERS[kind];
+  const existing = id ? cfg.list.find(i => i.id === id) : null;
+  document.getElementById('nameEditTitle').textContent = existing ? `${cfg.addLabel}を編集` : `${cfg.addLabel}を追加`;
+  document.getElementById('nameEditInput').value = existing ? existing.name : '';
+  document.getElementById('nameEditErr').classList.remove('show');
+  open('nameEditOverlay');
+  document.getElementById('nameEditInput').focus();
+}
+document.getElementById('nameEditCancel').addEventListener('click', () => close('nameEditOverlay'));
+document.getElementById('nameEditConfirm').addEventListener('click', async () => {
+  const { kind, id } = nameEditTarget;
+  const cfg = LIST_MANAGERS[kind];
+  const val = document.getElementById('nameEditInput').value.trim();
+  if(!val){
+    document.getElementById('nameEditErr').classList.add('show');
+    return;
+  }
+  if(id){
+    const item = cfg.list.find(i => i.id === id);
+    if(item) item.name = val;
+  }else{
+    cfg.list.push({ id: makeId('n'), name: val });
+  }
+  await cfg.save();
+  close('nameEditOverlay');
+  renderListManagerBody();
+  showToast('保存しました');
+});
+
+// ---- 経費設定 ----
+function openExpenseSettings(){
+  document.getElementById('normalRateInput').value = expenseSettings.normalRate;
+  document.getElementById('winterRateInput').value = expenseSettings.winterRate;
+  tempWinterMonths = expenseSettings.winterMonths.slice();
+  renderWinterMonthGrid();
+  open('expenseSettingsOverlay');
+}
+function renderWinterMonthGrid(){
+  const grid = document.getElementById('winterMonthGrid');
+  grid.innerHTML = Array.from({length:12}, (_,i)=>i+1).map(m =>
+    `<button type="button" class="month-toggle${tempWinterMonths.includes(m)?' month-active':''}" data-month="${m}">${m}月</button>`
+  ).join('');
+  grid.querySelectorAll('.month-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = Number(btn.getAttribute('data-month'));
+      const idx = tempWinterMonths.indexOf(m);
+      if(idx >= 0) tempWinterMonths.splice(idx, 1); else tempWinterMonths.push(m);
+      renderWinterMonthGrid();
+    });
+  });
+}
+document.getElementById('expSettingsClose').addEventListener('click', () => close('expenseSettingsOverlay'));
+document.getElementById('expSettingsSave').addEventListener('click', async () => {
+  const normal = Number(document.getElementById('normalRateInput').value);
+  const winter = Number(document.getElementById('winterRateInput').value);
+  if(isNaN(normal) || isNaN(winter) || normal < 0 || winter < 0){
+    showToast('単価を正しく入力してください');
+    return;
+  }
+  expenseSettings = { normalRate: normal, winterRate: winter, winterMonths: tempWinterMonths.slice() };
+  await saveExpenseSettings();
+  close('expenseSettingsOverlay');
+  showToast('経費設定を保存しました');
+});
+
+(async function init(){
+  const now = new Date();
+  document.getElementById('todayLabel').textContent =
+    `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())}`;
+  await migrateFromLegacyStorage();
+  await loadState();
+  render();
+})();
+
+// 複数タブ・ホーム画面アプリを行き来したときに、保存データを読み直して最新化する
+window.addEventListener('pageshow', async () => {
+  await loadState();
+  render();
+});
+</script>
+</body>
+</html>
